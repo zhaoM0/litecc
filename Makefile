@@ -1,12 +1,12 @@
 CFLAGS=-std=c11 -g -static
 
-nacc: main.o
+chibicc: main.o
 	$(CC) -o $@ $? $(LDFLAGS)
 
-test: nacc
+test: chibicc
 	./test.sh
 
 clean:
-	rm -f nacc *.o *~ tmp*
+	rm -f chibicc *.o *~ tmp*
 
 .PHONY: test clean
