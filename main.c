@@ -25,7 +25,9 @@ typedef struct Token {
   struct Token* next;
 } Token;
 
+// global variables
 Token *token;
+char *user_input;
 
 Token *new_token(TokenKind kind, Token *cur, char *str) {
   Token *tok = calloc(1, sizeof(Token));
@@ -72,9 +74,22 @@ void error(char *fmt, ...) {
   exit(1);
 }
 
+void error_at(char* loc, char* fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, " ");
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, args);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
 int expect_number() {
   if (token->kind != TK_NUM) {
-    error("Current token isn't number.");
+    error_at(token->str, "expected number.");
   }
   int val = token->val;
   token = token->next;
@@ -91,10 +106,10 @@ bool consume(char op) {
 
 int main(int argc, char **argv) {
   if (argc != 2) {
-    fprintf(stderr, "%s: invalid number of arguments\n", argv[0]);
-    return 1;
+    error("%s invalid number of arguments", argv[0]);
   }
-
+  
+  user_input = argv[1];
   token = tokenize(argv[1]);
 
   printf(".intel_syntax noprefix\n");
