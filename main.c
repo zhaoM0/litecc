@@ -40,17 +40,19 @@ struct Token {
   TokenKind kind;
   int val;
   char* str;
-  struct Token* next;
+  int len;
+  Token* next;
 };
 
 // global variables
 Token *token;
 char *user_input;
 
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->str = str;
+  tok->len = len;
   cur->next = tok;
   return tok;
 }
@@ -86,17 +88,19 @@ Token *tokenize(void) {
       continue;
     }
     if (isdigit(*p)) {
-      cur = new_token(TK_NUM, cur, p);
+      cur = new_token(TK_NUM, cur, p, 0);
+      char *q = p;
       cur->val = strtol(p, &p, 10);
+      cur->len = p - q;
       continue;
     }
     if (ispunct(*p)) {
-      cur = new_token(TK_RESERVED, cur, p++);
+      cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
   }
   
-  cur = new_token(TK_EOF, cur, p);
+  cur = new_token(TK_EOF, cur, p, 0);
   return head.next;
 }
 
@@ -148,17 +152,19 @@ int expect_number() {
   return val;
 }
 
-bool consume(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op) {
+bool consume(char *op) {
+  if (token->kind != TK_RESERVED ||
+      token->len != strlen(op) || 
+      strncmp(token->str, op, token->len)) {
     return false;
   }
   token = token->next;
   return true;
 }
 
-void expect(char op) {
+void expect(char *op) {
   if (!consume(op))
-    error_at(token->str, "expected '%c'", op);
+    error_at(token->str, "expected \"%s\"", op);
 }
 
 // Parser: transform expression to syntax tree.
@@ -172,9 +178,9 @@ static Node* expr() {
   Node* node = mul();
 
   while(1) {
-    if (consume('+')) {
+    if (consume("+")) {
       node = new_node(ND_ADD, node, mul());
-    } else if (consume('-')) {
+    } else if (consume("-")) {
       node = new_node(ND_SUB, node, mul());
     } else {
       return node;
@@ -186,9 +192,9 @@ static Node* mul() {
   Node* node = unary();
 
   while(1) {
-    if (consume('*')) {
+    if (consume("*")) {
       node = new_node(ND_MUL, node, unary());
-    } else if (consume('/')) {
+    } else if (consume("/")) {
       node = new_node(ND_DIV, node, unary());
     } else {
       return node;
@@ -197,18 +203,18 @@ static Node* mul() {
 }
 
 static Node* unary() {
-  if (consume('+')) {
+  if (consume("+")) {
     return unary();
-  } else if (consume('-')) {
+  } else if (consume("-")) {
     return new_node(ND_SUB, new_num_node(0), unary());
   } 
   return primary();
 }
 
 static Node* primary() {
-  if (consume('(')) {
+  if (consume("(")) {
     Node* node = expr();
-    expect(')');
+    expect(")");
     return node;
   }
 
