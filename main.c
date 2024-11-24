@@ -24,6 +24,10 @@ typedef enum {
   ND_SUB, // -
   ND_MUL, // *
   ND_DIV, // /
+  ND_EQ,  // ==
+  ND_NE,  // !=
+  ND_LT,  // <
+  ND_LE,  // <=
   ND_NUM, // interger
 } NodeKind;
 
@@ -72,8 +76,14 @@ Node *new_num_node(int val) {
   return node;
 }
 
+void error_at(char* loc, char* fmt, ...);
+
 bool at_eof() {
   return token->kind == TK_EOF;
+}
+
+static bool startwith(char *p, const char *t) {
+  return strncmp(p, t, strlen(t)) == 0;
 }
 
 // Scanner: tokenize source code to independt token.
@@ -83,10 +93,24 @@ Token *tokenize(void) {
   Token *cur = &head;
 
   while (*p) {
+    // Skip whitespace characters.
     if (isspace(*p)) {
       ++p;
       continue;
     }
+    // Multi-letter punctuators
+    if (startwith(p, "==") || startwith(p, "!=") ||
+        startwith(p, "<=") || startwith(p, ">=")) {
+      cur = new_token(TK_RESERVED, cur, p, 2);
+      p += 2;
+      continue;
+    }
+    // Single-letter punctuators
+    if (ispunct(*p)) {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+    // Integer literal
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
       char *q = p;
@@ -94,10 +118,8 @@ Token *tokenize(void) {
       cur->len = p - q;
       continue;
     }
-    if (ispunct(*p)) {
-      cur = new_token(TK_RESERVED, cur, p++, 1);
-      continue;
-    }
+    // Invalid token.
+    error_at(p, "invalid token");
   }
   
   cur = new_token(TK_EOF, cur, p, 0);
@@ -112,7 +134,9 @@ void dispaly_token_list() {
         printf("(NUM, %d) -> ", cur->val); 
         break;
       case TK_RESERVED:
-        printf("(RES, %c) -> ", cur->str[0]);
+        char* sval = (char *)calloc(10, sizeof(char));
+        strncpy(sval, cur->str, cur->len);
+        printf("(RES, %s) -> ", sval);
         break;
     }
     cur = cur->next;
@@ -170,11 +194,52 @@ void expect(char *op) {
 // Parser: transform expression to syntax tree.
 // Inferfaces
 static Node* expr();
+static Node* equality();
+static Node* relational();
+static Node* add();
 static Node* mul();
 static Node* unary();
 static Node* primary();
 
+
 static Node* expr() {
+  return equality();
+}
+
+static Node* equality() {
+  Node* node = relational();
+
+  while(1) {
+    if (consume("==")) {
+      node = new_node(ND_EQ, node, relational());
+    } else if (consume("!=")) {
+      node = new_node(ND_NE, node, relational());
+    } else {
+      return node;
+    }
+  }
+}
+
+static Node* relational() {
+  Node* node = add();
+
+  while(1) {
+    if (consume("<")) {
+      node = new_node(ND_LT, node, add());
+    } else if (consume("<=")) {
+      node = new_node(ND_LE, node, add());
+    } else if (consume(">")) {
+      node = new_node(ND_LT, add(), node);
+    } else if (consume(">=")) {
+      node = new_node(ND_LE, add(), node);
+    } else {
+      return node;
+    }
+  }
+}
+
+
+static Node* add() {
   Node* node = mul();
 
   while(1) {
@@ -250,7 +315,27 @@ void gen(Node* node) {
     case ND_DIV:
       printf("  cqo\n");
       printf("  idiv rdi\n");  
-      break;  
+      break;
+    case ND_EQ:
+      printf("  cmp rax, rdi\n");
+      printf("  sete al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_NE:
+      printf("  cmp rax, rdi\n");
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_LT:
+      printf("  cmp rax, rdi\n");
+      printf("  setl al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_LE:
+      printf("  cmp rax, rdi\n");
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      break;
     default: 
       error("Unkown operator");
   }
