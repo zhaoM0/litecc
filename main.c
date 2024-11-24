@@ -163,11 +163,12 @@ void expect(char op) {
 
 // Parser: transform expression to syntax tree.
 // Inferfaces
-Node* expr();
-Node* mul();
-Node* primary();
+static Node* expr();
+static Node* mul();
+static Node* unary();
+static Node* primary();
 
-Node* expr() {
+static Node* expr() {
   Node* node = mul();
 
   while(1) {
@@ -181,21 +182,30 @@ Node* expr() {
   }
 }
 
-Node* mul() {
-  Node* node = primary();
+static Node* mul() {
+  Node* node = unary();
 
   while(1) {
     if (consume('*')) {
-      node = new_node(ND_MUL, node, primary());
+      node = new_node(ND_MUL, node, unary());
     } else if (consume('/')) {
-      node = new_node(ND_DIV, node, primary());
+      node = new_node(ND_DIV, node, unary());
     } else {
       return node;
     }
   }
 }
 
-Node* primary() {
+static Node* unary() {
+  if (consume('+')) {
+    return unary();
+  } else if (consume('-')) {
+    return new_node(ND_SUB, new_num_node(0), unary());
+  } 
+  return primary();
+}
+
+static Node* primary() {
   if (consume('(')) {
     Node* node = expr();
     expect(')');
