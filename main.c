@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
   token = tokenize();
   
   // Parser
-  Node* node = expr();
+  Node* node = program();
 
   // CodeGen
   codegen(node);

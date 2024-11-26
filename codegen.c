@@ -1,20 +1,5 @@
 #include "litecc.h"
 
-static void gen(Node* node);
-
-void codegen(Node* node) {
-  printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
-  
-  gen(node);
-
-  // A result must be at the top of the stack, so pop it
-  // to RAX to make it a program exit code.
-  printf("  pop rax\n");
-  printf("  ret\n");
-}
-
 static void gen(Node* node) {
   if (node == NULL) {
     return;
@@ -69,4 +54,19 @@ static void gen(Node* node) {
   }
 
   printf("  push rax\n");
+}
+
+void codegen(Node* node) {
+  printf(".intel_syntax noprefix\n");
+  printf(".global main\n");
+  printf("main:\n");
+  
+  for (Node* cur = node; cur != NULL; cur = cur->next) {
+    gen(cur);
+    printf("  pop rax\n");
+  }
+
+  // A result must be at the top of the stack, so pop it
+  // to RAX to make it a program exit code.
+  printf("  ret\n");
 }
