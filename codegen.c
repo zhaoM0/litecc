@@ -8,6 +8,11 @@ static void gen(Node* node) {
     case ND_NUM:
       printf("  push %ld\n", node->val);
       return;
+    case ND_EXPR_STMT:
+      gen(node->lhs);
+      printf("  add rsp, 8\n");
+      // printf("  pop rax\n");
+      return;
     case ND_RET:
       gen(node->lhs);
       printf("  pop rax\n");
@@ -69,7 +74,6 @@ void codegen(Node* node) {
   
   for (Node* cur = node; cur != NULL; cur = cur->next) {
     gen(cur);
-    printf("  pop rax\n");
   }
 
   // A result must be at the top of the stack, so pop it

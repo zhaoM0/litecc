@@ -57,6 +57,7 @@ typedef enum {
   ND_LT,   // <
   ND_LE,   // <=
   ND_RET,  // "return"
+  ND_EXPR_STMT,  // expression statement
   ND_NUM,  // interger
 } NodeKind;
 
