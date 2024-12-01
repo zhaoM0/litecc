@@ -1,5 +1,20 @@
 #include "litecc.h"
 
+// All local variable instance created during parsing are
+// accumulated to this list
+Var* locals;
+
+// Find a local variable by name.
+static Var *find_var(Token* tok) {
+  for (Var* vp = locals; vp != NULL; vp = vp->next) {
+    if (vp->len == tok->len && 
+        !strncmp(vp->name, tok->str, tok->len)) {
+      return vp;
+    }
+  }
+  return NULL;
+}
+
 static Node *new_node(NodeKind kind) {
   Node* node = (Node *)calloc(1, sizeof(Node));
   node->kind = kind;
@@ -25,10 +40,19 @@ static Node *new_num(long val) {
   return node;
 }
 
-static Node *new_var_node(char name) {
+static Node *new_var(Var *var) {
   Node* node = new_node(ND_VAR);
-  node->name = name;
+  node->var = var;
   return node;
+}
+
+static Var *new_lvar(char* name) {
+  Var *var = calloc(1, sizeof(Var));
+  var->next = locals;
+  var->name = name;
+  var->len  = strlen(name);
+  locals = var;
+  return var;
 }
 
 static Node* stmt(void);
@@ -43,7 +67,9 @@ static Node* primary(void);
 
 
 // program = stmt*
-Node* program(void) {
+Function* program(void) {
+  locals = NULL;
+
   Node head = {};
   Node* cur = &head;
 
@@ -52,7 +78,10 @@ Node* program(void) {
     cur = cur->next;
   }
 
-  return head.next;
+  Function* prog = calloc(1, sizeof(Function));
+  prog->node = head.next;
+  prog->locals = locals;
+  return prog;
 }
 
 // stmt = "return" expr ";"
@@ -167,8 +196,12 @@ static Node* primary(void) {
   }
 
   Token* tok = consume_ident();
-  if (tok != NULL) {
-    return new_var_node((tok->str)[0]);
+  if (tok) {
+    Var* var = find_var(tok);
+    if (!var) {
+      var = new_lvar(strndup(tok->str, tok->len));
+    }
+    return new_var(var);
   }
 
   return new_num(expect_number());

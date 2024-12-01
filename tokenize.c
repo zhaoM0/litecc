@@ -121,17 +121,23 @@ Token *tokenize(void) {
       ++p;
       continue;
     }
+    
     // Keywords: 'return'
     if (startwith(p, "return") && !is_alnum(p[6])) {
       cur = new_token(TK_RESERVED, cur, p, 6);
       p += 6;
       continue;
     }
+    
     // Identifier
-    if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++, 1);
+    if (is_alpha(*p)) {
+      char *q = p++;
+      while (is_alnum(*p))
+        ++p;
+      cur = new_token(TK_IDENT, cur, q, p - q);
       continue;
     }
+    
     // Multi-letter punctuators
     if (startwith(p, "==") || startwith(p, "!=") ||
         startwith(p, "<=") || startwith(p, ">=")) {
@@ -139,11 +145,13 @@ Token *tokenize(void) {
       p += 2;
       continue;
     }
+    
     // Single-letter punctuators
     if (ispunct(*p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
+    
     // Integer literal
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
@@ -152,6 +160,7 @@ Token *tokenize(void) {
       cur->len = p - q;
       continue;
     }
+    
     // Invalid token.
     error_at(p, "invalid token");
   }
