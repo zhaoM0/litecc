@@ -2,7 +2,6 @@
 *.o
 tmp*
 a.out
-chibicc
-nacc
+litecc
 init.gdb
 .vscode/

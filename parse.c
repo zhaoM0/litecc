@@ -25,8 +25,15 @@ static Node *new_num(long val) {
   return node;
 }
 
+static Node *new_var_node(char name) {
+  Node* node = new_node(ND_VAR);
+  node->name = name;
+  return node;
+}
+
 static Node* stmt(void);
 static Node* expr(void);
+static Node* assign(void);
 static Node* equality(void);
 static Node* relational(void);
 static Node* add(void);
@@ -52,7 +59,7 @@ Node* program(void) {
 //      | expr ";"
 static Node* stmt(void) {
   if (consume("return")) {
-    Node* node = new_unary(ND_RET, expr());
+    Node* node = new_unary(ND_RETURN, expr());
     expect(";");
     return node;
   }
@@ -62,9 +69,18 @@ static Node* stmt(void) {
   return node;
 }
 
-// expr = equality
+// expr = assign
 static Node* expr(void) {
-  return equality();
+  return assign();
+}
+
+// assgin = equality ("=" assign)?
+static Node* assign(void) {
+  Node* node = equality();
+  if (consume("=")) {
+    node = new_binary(ND_ASSIGN, node, assign());
+  }
+  return node;
 }
 
 // equality = relational ("==" relational | "!=" relational)*
@@ -142,12 +158,17 @@ static Node* unary(void) {
   return primary();
 }
 
-// primary = "(" expr ")" | num
+// primary = "(" expr ")" | ident | num
 static Node* primary(void) {
   if (consume("(")) {
     Node* node = expr();
     expect(")");
     return node;
+  }
+
+  Token* tok = consume_ident();
+  if (tok != NULL) {
+    return new_var_node((tok->str)[0]);
   }
 
   return new_num(expect_number());
