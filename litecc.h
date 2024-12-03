@@ -70,18 +70,26 @@ typedef enum {
   ND_LE,         // <=
   ND_ASSIGN,     // =
   ND_RETURN,     // "return"
-  ND_EXPR_STMT,  // expression statement
-  ND_VAR,        // variable
-  ND_NUM,        // interger
+  ND_IF,         // "if"
+  ND_EXPR_STMT,  // Expression statement
+  ND_VAR,        // Variable
+  ND_NUM,        // Interger
 } NodeKind;
 
 // AST node type.
 typedef struct Node Node;
 struct Node {
   NodeKind kind;  // Node kind
-  Node* next;     // Next statement
+  Node* next;     // Next node
+
   Node* lhs;      // Left-hand side
   Node* rhs;      // Right-hand side
+  
+  // "if" statement
+  Node* cond;
+  Node* then;
+  Node* els;
+
   Var*  var;      // Used if kind == ND_VAR
   long  val;      // Used if kind == ND_NUM
 };

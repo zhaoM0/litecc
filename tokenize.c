@@ -109,6 +109,29 @@ static bool is_alnum(char c) {
   return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
+static char *starts_with_reserved(char *p) {
+  // Keyword
+  static char* kw[] = {"return", "if", "else"};
+
+  for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
+    int len = strlen(kw[i]);
+    if (startwith(p, kw[i]) && !is_alnum(p[len])) {
+      return kw[i];
+    }
+  }
+
+  // Multi-letter punctuator
+  static char* ops[] = {"==", "!=", "<=", ">="};
+
+  for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++) {
+    if (startwith(p, ops[i])) {
+      return ops[i];
+    }
+  }
+
+  return NULL;
+}
+
 // Scanner: tokenize source code to independt token.
 Token *tokenize(void) {
   char *p = user_input;
@@ -122,10 +145,12 @@ Token *tokenize(void) {
       continue;
     }
     
-    // Keywords: 'return'
-    if (startwith(p, "return") && !is_alnum(p[6])) {
-      cur = new_token(TK_RESERVED, cur, p, 6);
-      p += 6;
+    // Keywords or multi-letter punctuators
+    char *kw = starts_with_reserved(p);
+    if (kw != NULL) {
+      int len = strlen(kw);
+      cur = new_token(TK_RESERVED, cur, p, len);
+      p += len;
       continue;
     }
     
@@ -135,14 +160,6 @@ Token *tokenize(void) {
       while (is_alnum(*p))
         ++p;
       cur = new_token(TK_IDENT, cur, q, p - q);
-      continue;
-    }
-    
-    // Multi-letter punctuators
-    if (startwith(p, "==") || startwith(p, "!=") ||
-        startwith(p, "<=") || startwith(p, ">=")) {
-      cur = new_token(TK_RESERVED, cur, p, 2);
-      p += 2;
       continue;
     }
     
