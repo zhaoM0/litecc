@@ -86,6 +86,7 @@ Function* program(void) {
 
 // stmt = "return" expr ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "while" "(" expr ")" stmt
 //      | expr ";"
 static Node* stmt(void) {
   if (consume("return")) {
@@ -103,6 +104,15 @@ static Node* stmt(void) {
     if (consume("else")) {
       node->els = stmt();
     }
+    return node;
+  }
+
+  if (consume("while")) {
+    Node* node = new_node(ND_WHILE);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
     return node;
   }
 
