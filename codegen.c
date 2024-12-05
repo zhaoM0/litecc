@@ -103,6 +103,12 @@ static void gen(Node* node) {
       printf(".L.end.%d:\n", seq);
       return;
     }
+    case ND_BLOCK: {
+      for (Node* cur = node->block; cur != NULL; cur = cur->next) {
+        gen(cur);
+      }
+      return;
+    }
     case ND_RETURN: {
       gen(node->lhs);
       printf("  pop rax\n");

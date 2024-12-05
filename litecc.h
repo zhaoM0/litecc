@@ -73,6 +73,7 @@ typedef enum {
   ND_IF,         // "if"
   ND_WHILE,      // "while"
   ND_FOR,        // "for"
+  ND_BLOCK,      // Block -> "{...}"
   ND_EXPR_STMT,  // Expression statement
   ND_VAR,        // Variable
   ND_NUM,        // Interger
@@ -93,6 +94,9 @@ struct Node {
   Node* els;
   Node* init;
   Node* inc;
+
+  // Block use
+  Node* block;
 
   Var*  var;      // Used if kind == ND_VAR
   long  val;      // Used if kind == ND_NUM
