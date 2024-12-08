@@ -249,8 +249,24 @@ static Node* unary(void) {
   return primary();
 }
 
+// func-args = "(" (assign ("," assign)*)? ")"
+static Node* func_args() {
+  if (consume(")")) {
+    return NULL;
+  }
+
+  Node* head = assign();
+  Node* cur = head;
+  while (consume(",")) {
+    cur->next = assign();
+    cur = cur->next;
+  }
+  expect(")");
+  return head;
+}
+
 // primary = num
-//         | ident ("(" ")")?
+//         | ident func-args?
 //         | "(" expr ")" 
 static Node* primary(void) {
   if (consume("(")) {
@@ -263,9 +279,9 @@ static Node* primary(void) {
   if (tok) {
     // Function call
     if (consume("(")) {
-      expect(")");
       Node* node = new_node(ND_FUNCALL);
       node->funcname = strndup(tok->str, tok->len);
+      node->args = func_args();
       return node;
     }
 

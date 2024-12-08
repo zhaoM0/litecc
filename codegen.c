@@ -1,6 +1,7 @@
 #include "litecc.h"
 
 static int labelseq = 1;
+static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 // Pushes the given node's address to the stack
 static void gen_addr(Node* node) {
@@ -104,6 +105,14 @@ static void gen(Node* node) {
       return;
     }
     case ND_FUNCALL: {
+      int nargs = 0;
+      for (Node* arg = node->args; arg != NULL; arg = arg->next) {
+        gen(arg);
+        nargs++;
+      }
+      for (int i = nargs - 1; i >= 0; i--) {
+        printf("  pop %s\n", argreg[i]);
+      }
       printf("  call %s\n", node->funcname);
       printf("  push rax\n");
       return;
