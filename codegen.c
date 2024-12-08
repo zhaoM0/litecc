@@ -1,7 +1,9 @@
 #include "litecc.h"
 
-static int labelseq = 1;
 static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+static int labelseq = 1;
+static char* funcname;
 
 // Pushes the given node's address to the stack
 static void gen_addr(Node* node) {
@@ -142,7 +144,7 @@ static void gen(Node* node) {
     case ND_RETURN: {
       gen(node->lhs);
       printf("  pop rax\n");
-      printf("  jmp .L.return\n");
+      printf("  jmp .L.return.%s\n", funcname);
       return;
     }
   }
@@ -196,22 +198,26 @@ static void gen(Node* node) {
 
 void codegen(Function* prog) {
   printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
-  
-  // Prologue
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, %d\n", prog->stack_size);
 
-  // Emit code
-  for (Node* cur = prog->node; cur != NULL; cur = cur->next) {
-    gen(cur);
+  for (Function* fn = prog; fn != NULL; fn = fn->next) {
+    printf(".global %s\n", fn->name);
+    printf("%s:\n", fn->name);
+    funcname = fn->name;
+
+    // Prologue
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", fn->stack_size);
+
+    // Emit code
+    for (Node* cur = fn->node; cur != NULL; cur = cur->next) {
+      gen(cur);
+    }
+
+    // Epilogue
+    printf(".L.return.%s:\n", funcname);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n"); 
   }
-
-  // Epilogue
-  printf(".L.return:\n");
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n"); 
 }

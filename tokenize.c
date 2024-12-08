@@ -82,6 +82,16 @@ long expect_number(void) {
   return val;
 }
 
+// Ensure that the current token is TK_IDNET.
+char *expect_ident(void) {
+  if (token->kind != TK_IDENT) {
+    error_at(token->str, "expected an identifier");
+  }
+  char* s = strndup(token->str, token->len);
+  token = token->next;
+  return s;
+}
+
 // Check is or not reach to file end.
 bool at_eof() {
   return token->kind == TK_EOF;
