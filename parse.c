@@ -2,14 +2,14 @@
 
 // All local variable instance created during parsing are
 // accumulated to this list
-Var* locals;
+static VarList* locals;
 
 // Find a local variable by name.
 static Var *find_var(Token* tok) {
-  for (Var* vp = locals; vp != NULL; vp = vp->next) {
-    if (vp->len == tok->len && 
-        !strncmp(vp->name, tok->str, tok->len)) {
-      return vp;
+  for (VarList* vl = locals; vl != NULL; vl = vl->next) {
+    Var* var = vl->var;
+    if (strlen(var->name) == tok->len && !strncmp(var->name, tok->str, tok->len)) {
+      return var;
     }
   }
   return NULL;
@@ -48,10 +48,13 @@ static Node *new_var(Var *var) {
 
 static Var *new_lvar(char* name) {
   Var *var = calloc(1, sizeof(Var));
-  var->next = locals;
   var->name = name;
   var->len  = strlen(name);
-  locals = var;
+
+  VarList* vl = calloc(1, sizeof(VarList));
+  vl->var = var;
+  vl->next = locals;
+  locals = vl;
   return var;
 }
 
@@ -76,17 +79,37 @@ Function* program(void) {
     cur->next = function();
     cur = cur->next;
   }
-
   return head.next;
 }
 
-// function = ident "(" ")" "{" stmt "}"
+static VarList *read_func_params(void) {
+  if (consume(")")) {
+    return NULL;
+  }
+
+  VarList* head = calloc(1, sizeof(VarList));
+  head->var = new_lvar(expect_ident());
+  VarList* cur = head;
+
+  while (!consume(")")) {
+    expect(",");
+    cur->next = calloc(1, sizeof(VarList));
+    cur->next->var = new_lvar(expect_ident());
+    cur = cur->next;
+  }
+
+  return head;
+}
+
+// function = ident "(" params? ")" "{" stmt "}"
+// params   = ident ("," ident)*
 Function *function(void) {
   locals = NULL;
 
-  char* name = expect_ident();
+  Function* fn = calloc(1, sizeof(Function));
+  fn->name = expect_ident();
   expect("(");
-  expect(")");
+  fn->params = read_func_params();
   expect("{");
 
   Node head = {};
@@ -97,8 +120,6 @@ Function *function(void) {
     cur = cur->next;
   }
 
-  Function* fn = calloc(1, sizeof(Function));
-  fn->name = name;
   fn->node = head.next;
   fn->locals = locals;
   return fn;

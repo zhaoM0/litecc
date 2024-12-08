@@ -54,10 +54,15 @@ extern Token* token;
 // Local variable
 typedef struct Var Var;
 struct Var {
-  Var*  next;    // next variable
   char* name;    // variable name
   int   len;     // name length
   int   offset;  // offset from rbp
+};
+
+typedef struct VarList VarList;
+struct VarList {
+  VarList *next;
+  Var *var;
 };
 
 typedef enum {
@@ -112,8 +117,9 @@ typedef struct Function Function;
 struct Function {
   Function* next;
   char*     name;
+  VarList*  params;
   Node*     node;
-  Var*      locals;
+  VarList*  locals;
   int       stack_size;
 };
 
