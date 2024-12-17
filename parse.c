@@ -287,15 +287,18 @@ static Node* mul(void) {
   }
 }
 
-// unary = ("+" | "-")? unary
+// unary = ("+" | "-" | "*" | "&")? unary
 //       | primary
 static Node* unary(void) {
   Token* tok = NULL;
-  if (consume("+")) {
+  if (consume("+"))
     return unary();
-  } else if (tok = consume("-")) {
+  if (tok = consume("-"))
     return new_binary(ND_SUB, new_num(0, tok), unary(), tok);
-  } 
+  if (tok = consume("&"))
+    return new_unary(ND_ADDR, unary(), tok);
+  if (tok = consume("*"))
+    return new_unary(ND_DEREF, unary(), tok);
   return primary();
 }
 
