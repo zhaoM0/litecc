@@ -32,28 +32,40 @@ void error(char *fmt, ...) {
 }
 
 // Reports an error location and exit.
-void error_at(char* loc, char* fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-
+static void verror_at(char* loc, char* fmt, va_list ap) {
   int pos = loc - user_input;
   fprintf(stderr, "%s\n", user_input);
   fprintf(stderr, "%*s", pos, " ");
   fprintf(stderr, "^ ");
-  vfprintf(stderr, fmt, args);
+  vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
 }
 
+// Reports an error location and exit.
+void error_at(char* loc, char* fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  verror_at(loc, fmt, args);
+}
+
+// Reports an error location and exit.
+void error_tok(Token* tok, char* fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(tok->str, fmt, ap);
+}
+
 // Consumes the current token if it matches `op`.
-bool consume(char *op) {
+Token* consume(char *op) {
   if (token->kind != TK_RESERVED ||
       token->len != strlen(op) || 
       strncmp(token->str, op, token->len)) {
-    return false;
+    return NULL;
   }
+  Token* t = token;
   token = token->next;
-  return true;
+  return t;
 }
 
 // Consume the current token if it is an identifier.
@@ -68,14 +80,14 @@ Token* consume_ident(void) {
 
 // Ensure that the current token is `op`.
 void expect(char *op) {
-  if (!consume(op))
-    error_at(token->str, "expected \"%s\"", op);
+  if (consume(op) == NULL)
+    error_tok(token, "expected \"%s\"", op);
 }
 
 // Ensure that the current token is TK_NUM.
 long expect_number(void) {
   if (token->kind != TK_NUM) {
-    error_at(token->str, "expected number.");
+    error_tok(token, "expected number.");
   }
   long val = token->val;
   token = token->next;
@@ -85,7 +97,7 @@ long expect_number(void) {
 // Ensure that the current token is TK_IDNET.
 char *expect_ident(void) {
   if (token->kind != TK_IDENT) {
-    error_at(token->str, "expected an identifier");
+    error_tok(token, "expected an identifier");
   }
   char* s = strndup(token->str, token->len);
   token = token->next;
