@@ -68,6 +68,14 @@ Token* consume(char *op) {
   return t;
 }
 
+// Returns true if the current token matches a given string.
+Token* peek(char* s) {
+  if (token->kind != TK_RESERVED || strlen(s) != token->len ||
+      strncmp(token->str, s, token->len))
+    return NULL;
+  return token;
+}
+
 // Consume the current token if it is an identifier.
 Token* consume_ident(void) {
   if (token->kind != TK_IDENT) {
@@ -78,10 +86,11 @@ Token* consume_ident(void) {
   return t;
 }
 
-// Ensure that the current token is `op`.
-void expect(char *op) {
-  if (consume(op) == NULL)
-    error_tok(token, "expected \"%s\"", op);
+// Ensure that the current token is a given string
+void expect(char *s) {
+  if (!peek(s))
+    error_tok(token, "expected \"%s\"", s);
+  token = token->next;
 }
 
 // Ensure that the current token is TK_NUM.
@@ -133,7 +142,7 @@ static bool is_alnum(char c) {
 
 static char *starts_with_reserved(char *p) {
   // Keyword
-  static char* kw[] = {"return", "if", "else", "while", "for"};
+  static char* kw[] = {"return", "if", "else", "while", "for", "int"};
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
