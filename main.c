@@ -11,10 +11,10 @@ int main(int argc, char **argv) {
   token = tokenize();
   
   // Parser
-  Function* prog = program();
+  Program* prog = program();
 
   // Assign offsets to local variables.
-  for (Function* fn = prog; fn != NULL; fn = fn->next) {
+  for (Function* fn = prog->fns; fn != NULL; fn = fn->next) {
     int offset = 0;
     for (VarList* vl = fn->locals; vl != NULL; vl = vl->next) {
       Var* var = vl->var;
