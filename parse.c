@@ -420,16 +420,24 @@ static Node* func_args() {
 }
 
 // primary = num
+//         | "sizeof" unary
 //         | ident func-args?
 //         | "(" expr ")" 
 static Node* primary(void) {
+  Token* tok = NULL;
+
   if (consume("(")) {
     Node* node = expr();
     expect(")");
     return node;
   }
 
-  Token* tok = NULL;
+  if (tok = consume("sizeof")) {
+    Node* node = unary();
+    add_type(node);
+    return new_num(node->ty->size, tok);
+  }
+
   if (tok = consume_ident()) {
     // Function call
     if (consume("(")) {
